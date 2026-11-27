@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}投稿する - 放課後ポスト{% endblock %}
+
+{% block content %}
+<div class="create-form">
+    <header style="margin-bottom: 24px; text-align: center;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">✏️ 新しい投稿</h1>
+        <p style="color: var(--color-text-muted);">匿名で投稿できます。ニックネームは任意です。</p>
+    </header>
+    
+    <form method="POST" enctype="multipart/form-data" class="card" style="padding: 24px;">
+        <div class="form-group">
+            <label for="title" class="form-label">タイトル <span class="text-muted">(必須)</span></label>
+            <input type="text" id="title" name="title" class="form-input" 
+                   placeholder="例：数学の勉強法教えてください" 
+                   maxlength="100" required
+                   value="{{ title or '' }}">
+            <span class="form-hint">100文字以内</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="category" class="form-label">カテゴリー <span class="text-muted">(必須)</span></label>
+            <select id="category" name="category" class="form-select" required>
+                <option value="">選択してください</option>
+                {% for category in categories %}
+                <option value="{{ category }}" {% if category == category %}selected{% endif %}>{{ category }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="nickname" class="form-label">ニックネーム <span class="text-muted">(任意)</span></label>
+            <input type="text" id="nickname" name="nickname" class="form-input" 
+                   placeholder="匿名" maxlength="20"
+                   value="{{ nickname or '' }}">
+            <span class="form-hint">20文字以内。空欄の場合は「匿名」になります</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="content" class="form-label">本文 <span class="text-muted">(必須)</span></label>
+            <textarea id="content" name="content" class="form-textarea" 
+                      placeholder="投稿内容を入力してください..." 
+                      maxlength="5000" required>{{ content or '' }}</textarea>
+            <span class="form-hint">5000文字以内</span>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">画像添付 <span class="text-muted">(任意・1枚まで)</span></label>
+            <div class="file-upload">
+                <input type="file" id="imageUpload" name="image" class="file-upload-input" accept="image/png,image/jpeg,image/gif,image/webp">
+                <label for="imageUpload" class="file-upload-label">
+                    <span class="file-upload-icon">📷</span>
+                    <span>画像を選択またはドラッグ＆ドロップ</span>
+                    <span class="text-xs text-muted">PNG, JPG, GIF, WebP / 5MB以下</span>
+                </label>
+                <div id="imagePreview"></div>
+            </div>
+        </div>
+        
+        <div class="form-group" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--color-border);">
+            <p class="text-sm text-muted" style="margin-bottom: 12px;">
+                投稿することで、利用規約に同意したものとみなされます。<br>
+                個人情報・誹謗中傷・違法行為・スパムは禁止されています。
+            </p>
+            <button type="submit" class="btn btn--primary btn--block" style="font-size: 1rem; padding: 14px;">
+                投稿する
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}放課後ポスト - 高校生のための匿名コミュニティ{% endblock %}
+
+{% block content %}
+<!-- Today's Question Card -->
+<section class="question-card card" aria-labelledby="question-title">
+    <span class="question-label">📅 TODAY'S QUESTION</span>
+    <span class="question-label">{{ question_date }}</span>
+    <h2 id="question-title" class="question-text">{{ question_text }}</h2>
+    <div class="question-actions">
+        <a href="{{ url_for('question_page') }}" class="btn btn--primary">回答する</a>
+        <a href="{{ url_for('question_page') }}#past-questions" class="btn btn--secondary">過去の質問を見る</a>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="categories-section" aria-labelledby="categories-title">
+    <h2 id="categories-title" class="section-title">📂 カテゴリー</h2>
+    <div class="category-grid">
+        {% for category in categories %}
+        <a href="{{ url_for('board', category=category) }}" class="category-card card">
+            <span class="badge {{ get_category_badge_class(category) }}">{{ category }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</style>
+<style>
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+.category-card {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-decoration: none;
+    color: inherit;
+    transition: all var(--transition);
+}
+.category-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+.section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+</style>
+</section>
+
+<!-- Latest Posts -->
+<section class="latest-posts" aria-labelledby="latest-title">
+    <div class="section-header">
+        <h2 id="latest-title" class="section-title">📝 新着投稿</h2>
+        <a href="{{ url_for('board') }}" class="btn btn--ghost btn--sm">もっと見る →</a>
+    </div>
+    <style>
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    </style>
+    
+    {% if latest_posts %}
+    <div class="posts-grid">
+        {% for post in latest_posts %}
+        <article class="post-card card">
+            <a href="{{ url_for('post_detail', post_id=post.id) }}" class="post-card-link">
+                <header class="post-card-header">
+                    <span class="badge {{ get_category_badge_class(post.category) }} post-card-category">{{ post.category }}</span>
+                    <div class="post-card-meta">
+                        <span>{{ post.created_at[:16].replace('T', ' ') }}</span>
+                        <span>❤️ {{ post.like_count }}</span>
+                    </div>
+                </header>
+                <h3 class="post-card-title">{{ post.title }}</h3>
+                <p class="post-card-content">{{ post.content }}</p>
+                {% if post.image_url %}
+                <img src="{{ post.image_url }}" alt="投稿画像" class="post-card-image">
+                {% endif %}
+                <footer class="post-card-footer">
+                    <div class="post-card-actions">
+                        <span class="post-card-action">
+                            <span class="like-icon">🤍</span>
+                            <span class="like-count">{{ post.like_count }}</span>
+                        </span>
+                        <span class="post-card-action">💬 コメント</span>
+                    </div>
+                </footer>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state card">
+        <div class="empty-state-icon">📭</div>
+        <h3 class="empty-state-title">まだ投稿がありません</h3>
+        <p class="empty-state-text">最初の投稿をしてみませんか？</p>
+        <a href="{{ url_for('create_post') }}" class="btn btn--primary mt-3">投稿する</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}掲示板 - 放課後ポスト{% endblock %}
+
+{% block content %}
+<header class="board-header">
+    <h1 class="board-title">📋 掲示板</h1>
+    
+    <div class="category-tabs" role="tablist" aria-label="カテゴリー">
+        <a href="{{ url_for('board') }}" 
+           class="category-tab {% if not current_category %}active{% endif %}" 
+           role="tab" 
+           {% if not current_category %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+            全て
+        </a>
+        {% for category in categories %}
+        <a href="{{ url_for('board', category=category) }}" 
+           class="category-tab {% if current_category == category %}active{% endif %}" 
+           role="tab" 
+           {% if current_category == category %}aria-selected="true"{% else %}aria-selected="false"{% endif %}>
+            {{ category }}
+        </a>
+        {% endfor %}
+    </div>
+</header>
+
+<section class="posts-section" aria-labelledby="posts-title">
+    <h2 id="posts-title" class="sr-only">投稿一覧</h2>
+    
+    {% if posts %}
+    <div class="posts-grid">
+        {% for post in posts %}
+        <article class="post-card card">
+            <a href="{{ url_for('post_detail', post_id=post.id) }}" class="post-card-link">
+                <header class="post-card-header">
+                    <span class="badge {{ get_category_badge_class(post.category) }} post-card-category">{{ post.category }}</span>
+                    <div class="post-card-meta">
+                        <span>{{ post.created_at[:16].replace('T', ' ') }}</span>
+                        <span>❤️ {{ post.like_count }}</span>
+                    </div>
+                </header>
+                <h3 class="post-card-title">{{ post.title }}</h3>
+                <p class="post-card-content">{{ post.content }}</p>
+                {% if post.image_url %}
+                <img src="{{ post.image_url }}" alt="投稿画像" class="post-card-image">
+                {% endif %}
+                <footer class="post-card-footer">
+                    <div class="post-card-actions">
+                        <span class="post-card-action">
+                            <span class="like-icon">🤍</span>
+                            <span class="like-count">{{ post.like_count }}</span>
+                        </span>
+                        <span class="post-card-action">💬 コメント</span>
+                    </div>
+                </footer>
+            </a>
+        </article>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if total_pages > 1 %}
+    <nav class="pagination" aria-label="ページネーション">
+        {% if page > 1 %}
+        <a href="{{ url_for('board', category=current_category, page=page-1) }}" class="pagination-btn">前へ</a>
+        {% else %}
+        <button class="pagination-btn" disabled>前へ</button>
+        {% endif %}
+        
+        <span class="pagination-info">
+            {{ page }} / {{ total_pages }} ページ (全{{ total }}件)
+        </span>
+        
+        {% if page < total_pages %}
+        <a href="{{ url_for('board', category=current_category, page=page+1) }}" class="pagination-btn">次へ</a>
+        {% else %}
+        <button class="pagination-btn" disabled>次へ</button>
+        {% endif %}
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div class="empty-state card">
+        <div class="empty-state-icon">📭</div>
+        <h3 class="empty-state-title">投稿がありません</h3>
+        <p class="empty-state-text">
+            {% if current_category %}
+            「{{ current_category }}」カテゴリーにはまだ投稿がありません。
+            {% else %}
+            まだ投稿がありません。
+            {% endif %}
+        </p>
+        <a href="{{ url_for('create_post') }}" class="btn btn--primary mt-3">最初の投稿をする</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - 放課後ポスト{% endblock %}
+
+{% block content %}
+<article class="post-detail card">
+    <header class="post-detail-header">
+        <span class="badge {{ get_category_badge_class(post.category) }}">{{ post.category }}</span>
+        <h1 class="post-detail-title">{{ post.title }}</h1>
+        <div class="post-detail-meta">
+            <span>👤 {{ post.nickname or '匿名' }}</span>
+            <span>🕐 {{ post.created_at[:16].replace('T', ' ') }}</span>
+            <span>❤️ {{ post.like_count }}</span>
+        </div>
+    </header>
+    
+    <div class="post-detail-content">{{ post.content }}</div>
+    
+    {% if post.image_url %}
+    <img src="{{ post.image_url }}" alt="投稿画像" class="post-detail-image">
+    {% endif %}
+    
+    <div class="post-detail-actions">
+        <button class="post-action-btn {% if user_liked %}liked{% endif %}" 
+                data-post-id="{{ post.id }}"
+                {% if user_liked %}disabled{% endif %}>
+            <span class="like-icon">{% if user_liked %}❤️{% else %}🤍{% endif %}</span>
+            <span class="like-count">{{ post.like_count }}</span>
+            <span>{% if user_liked %}いいね済み{% else %}いいね{% endif %}</span>
+        </button>
+        
+        <button class="post-action-btn" data-report-post-id="{{ post.id }}">
+            🚩 通報
+        </button>
+    </div>
+</article>
+
+<!-- Comments Section -->
+<section class="comments-section card" aria-labelledby="comments-title">
+    <div class="card-body">
+        <header class="comments-header">
+            <h2 id="comments-title" class="comments-title">💬 コメント ({{ comments|length }})</h2>
+        </header>
+        
+        <div class="comment-list" id="commentsList">
+            {% for comment in comments %}
+            <article class="comment-card">
+                <header class="comment-header">
+                    <span class="comment-nickname">{{ comment.nickname }}</span>
+                    <span class="comment-time">{{ comment.created_at[:16].replace('T', ' ') }}</span>
+                </header>
+                <div class="comment-content">{{ comment.content }}</div>
+            </article>
+            {% else %}
+            <div class="empty-state" style="padding: 24px;">
+                <p class="empty-state-text">まだコメントがありません。最初のコメントを書いてみましょう。</p>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Comment Form -->
+        <form class="comment-form" data-post-id="{{ post.id }}">
+            <div class="form-group">
+                <label for="commentNickname" class="form-label">ニックネーム <span class="text-muted">(任意)</span></label>
+                <input type="text" id="commentNickname" name="nickname" class="form-input" placeholder="匿名" maxlength="20">
+            </div>
+            <div class="form-group">
+                <label for="commentContent" class="form-label">コメント</label>
+                <textarea id="commentContent" name="content" class="form-textarea" placeholder="コメントを入力..." maxlength="2000" required></textarea>
+                <span class="form-hint">2000文字以内</span>
+            </div>
+            <button type="submit" class="btn btn--primary btn--block">コメントする</button>
+        </form>
+    </div>
+</section>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
+    <div class="modal">
+        <h3 id="reportModalTitle" class="modal-title">🚩 投稿を通報</h3>
+        <p class="modal-text">不適切な投稿を運営に報告します。通報内容は匿名で送信されます。</p>
+        
+        <form id="reportForm" class="report-form">
+            <div class="form-group">
+                <label class="form-label">通報理由 <span class="text-muted">(必須)</span></label>
+                <div class="report-reason-options">
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="spam" required> スパム・宣伝
+                    </label>
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="harassment"> ハラスメント・誹謗中傷
+                    </label>
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="personal_info"> 個人情報の掲載
+                    </label>
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="illegal"> 違法行為・犯罪予告
+                    </label>
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="inappropriate"> 不適切な表現・画像
+                    </label>
+                    <label class="report-reason-option">
+                        <input type="radio" name="reason" value="other"> その他
+                    </label>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="reportDetail" class="form-label">詳細 <span class="text-muted">(任意)</span></label>
+                <textarea id="reportDetail" name="detail" class="form-textarea" placeholder="具体的な内容を教えてください（500文字以内）" maxlength="500"></textarea>
+            </div>
+            
+            <div class="modal-actions">
+                <button type="button" class="btn btn--secondary modal-close">キャンセル</button>
+                <button type="submit" class="btn btn--danger">送信する</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize like button for post detail
+    const likeBtn = document.querySelector('.post-action-btn[data-post-id]');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', handleLike);
+    }
+    
+    // Initialize report modal
+    const reportModal = document.getElementById('reportModal');
+    const reportBtn = document.querySelector('[data-report-post-id]');
+    const closeBtn = reportModal.querySelector('.modal-close');
+    const cancelBtn = reportModal.querySelector('.modal-cancel');
+    const form = document.getElementById('reportForm');
+    
+    let currentPostId = null;
+    
+    reportBtn?.addEventListener('click', () => {
+        currentPostId = reportBtn.dataset.reportPostId;
+        reportModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    });
+    
+    function closeModal() {
+        reportModal.classList.remove('show');
+        document.body.style.overflow = '';
+        form.reset();
+        currentPostId = null;
+    }
+    
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    reportModal?.addEventListener('click', (e) => {
+        if (e.target === reportModal) closeModal();
+    });
+    
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (!currentPostId) return;
+        
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const reasonInput = form.querySelector('input[name="reason"]:checked');
+        const detailInput = form.querySelector('textarea[name="detail"]');
+        
+        if (!reasonInput) {
+            showToast('通報理由を選択してください');
+            return;
+        }
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = '送信中...';
+        
+        try {
+            const formData = new FormData();
+            formData.append('reason', reasonInput.value);
+            formData.append('detail', detailInput.value);
+            
+            const response = await fetch(`/post/${currentPostId}/report`, {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                showToast('通報しました。ご協力ありがとうございます。');
+                closeModal();
+            } else {
+                showToast(data.error || '通報に失敗しました');
+            }
+        } catch (err) {
+            showToast('通信エラーが発生しました');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '送信する';
+        }
+    });
+    
+    // Comment form
+    const commentForm = document.querySelector('.comment-form');
+    if (commentForm) {
+        commentForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const postId = commentForm.dataset.postId;
+            const contentInput = commentForm.querySelector('textarea[name="content"]');
+            const nicknameInput = commentForm.querySelector('input[name="nickname"]');
+            const submitBtn = commentForm.querySelector('button[type="submit"]');
+            const commentsList = document.getElementById('commentsList');
+            
+            const content = contentInput.value.trim();
+            const nickname = nicknameInput.value.trim() || '匿名';
+            
+            if (!content) {
+                showToast('コメントを入力してください');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = '投稿中...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('content', content);
+                formData.append('nickname', nickname);
+                
+                const response = await fetch(`/post/${postId}/comment`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    contentInput.value = '';
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment-card';
+                    newComment.innerHTML = `
+                        <div class="comment-header">
+                            <span class="comment-nickname">${escapeHtml(nickname)}</span>
+                            <span class="comment-time">たった今</span>
+                        </div>
+                        <div class="comment-content">${escapeHtml(content)}</div>
+                    `;
+                    if (commentsList.querySelector('.empty-state')) {
+                        commentsList.innerHTML = '';
+                    }
+                    commentsList.insertBefore(newComment, commentsList.firstChild);
+                    showToast('コメントしました');
+                } else {
+                    showToast(data.error || 'コメントに失敗しました');
+                }
+            } catch (err) {
+                showToast('通信エラーが発生しました');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '送信';
+            }
+        });
+    }
+});
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showToast(message) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(100px);
+        background: var(--color-text);
+        color: white;
+        padding: 12px 20px;
+        border-radius: var(--radius-md);
+        font-size: 0.875rem;
+        font-weight: 500;
+        box-shadow: var(--shadow-lg);
+        z-index: 2000;
+        opacity: 0;
+        transition: all 0.3s ease;
+    `;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateX(-50%) translateY(0)';
+    });
+    
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(-50%) translateY(100px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}通報管理 - 放課後ポスト{% endblock %}
+
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto;">
+    <header style="margin-bottom: 24px;">
+        <h1 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 8px;">🚩 通報管理</h1>
+        <p style="color: var(--color-text-muted);">投稿された通報の一覧です。URLにkeyパラメータでアクセスしてください。</p>
+    </header>
+    
+    {% if reports %}
+    <div class="card" style="overflow-x: auto;">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>日時</th>
+                    <th>投稿ID</th>
+                    <th>投稿タイトル</th>
+                    <th>投稿内容</th>
+                    <th>通報理由</th>
+                    <th>詳細</th>
+                    <th>通報ID</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.created_at[:19].replace('T', ' ') }}</td>
+                    <td><code>{{ report.post_id[:12] }}...</code></td>
+                    <td>{{ report.post_title }}</td>
+                    <td>{{ report.post_content }}{% if report.post_content|length > 100 %}...{% endif %}</td>
+                    <td><span class="badge badge--other">{{ report.reason }}</span></td>
+                    <td>{{ report.detail or '-' }}</td>
+                    <td><code>{{ report.id[:12] }}...</code></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <p class="text-center text-sm text-muted mt-3">
+        総通報数: {{ reports.length }} 件
+    </p>
+    {% else %}
+    <div class="empty-state card" style="padding: 48px 24px;">
+        <div class="empty-state-icon">✅</div>
+        <h3 class="empty-state-title">通報はありません</h3>
+        <p class="empty-state-text">現在、通報された投稿はありません。</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

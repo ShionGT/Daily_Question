@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}今日の質問 - 放課後ポスト{% endblock %}
+
+{% block content %}
+<!-- Today's Question Card -->
+<section class="question-card card" aria-labelledby="question-title">
+    <span class="question-label">📅 TODAY'S QUESTION</span>
+    <span class="question-label">{{ question_date }}</span>
+    <h2 id="question-title" class="question-text">{{ question_text }}</h2>
+    <p class="text-sm text-muted" style="margin-top: 8px;">今日のお題に回答して、ほかの高校生の意見を見てみよう。</p>
+</section>
+
+<!-- Answer Form -->
+<section class="card" style="padding: 24px; margin-bottom: 24px;">
+    <h3 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 16px;">💬 あなたの回答</h3>
+    
+    <form id="answerForm" method="POST" action="{{ url_for('answer_question') }}">
+        <div class="form-group">
+            <label for="answerNickname" class="form-label">ニックネーム <span class="text-muted">(任意)</span></label>
+            <input type="text" id="answerNickname" name="nickname" class="form-input" 
+                   placeholder="匿名" maxlength="20">
+            <span class="form-hint">20文字以内。空欄の場合は「匿名」になります</span>
+        </div>
+        
+        <div class="form-group">
+            <label for="answerContent" class="form-label">回答</label>
+            <textarea id="answerContent" name="content" class="form-textarea" 
+                      placeholder="自由に回答してください..." 
+                      maxlength="2000" required></textarea>
+            <span class="form-hint">2000文字以内</span>
+        </div>
+        
+        <button type="submit" class="btn btn--primary btn--block" style="font-size: 1rem; padding: 14px;">
+            回答する
+        </button>
+    </form>
+</section>
+
+<!-- Answers List -->
+<section class="answers-section" aria-labelledby="answers-title">
+    <header class="comments-header">
+        <h2 id="answers-title" class="comments-title">📝 みんなの回答 ({{ answers|length }})</h2>
+    </header>
+    
+    <div class="comment-list" id="answersList">
+        {% for answer in answers %}
+        <article class="answer-card">
+            <header class="answer-header">
+                <span class="answer-nickname">{{ answer.nickname }}</span>
+                <span class="answer-time">{{ answer.created_at[:16].replace('T', ' ') }}</span>
+            </header>
+            <div class="answer-content">{{ answer.content }}</div>
+        </article>
+        {% else %}
+        <div class="empty-state" style="padding: 24px;">
+            <div class="empty-state-icon">💭</div>
+            <h3 class="empty-state-title">まだ回答がありません</h3>
+            <p class="empty-state-text">最初の回答者になってみませんか？</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Past Questions -->
+<section class="past-questions" id="past-questions" aria-labelledby="past-title">
+    <h2 id="past-title" class="section-title" style="margin-top: 32px;">📜 過去の質問</h2>
+    
+    <div class="comment-list">
+        {% for pq in past_questions %}
+        <article class="past-question-item">
+            <div class="past-question-date">{{ pq.date }}</div>
+            <div class="past-question-text">{{ pq.question }}</div>
+        </article>
+        {% endfor %}
+    </div>
+    
+    <p class="text-center text-sm text-muted mt-3">
+        毎日0時（日本時間）に新しい質問に切り替わります。
+    </p>
+</section>
+{% endblock %}
